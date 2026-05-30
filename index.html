@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hex Paper</title>
+  <style>
+    :root {
+      --paper-width: 8.5in;
+      --paper-height: 11in;
+      --print-margin: 0.5in;
+      --line: #c9c9c9;
+      --minor-line: #d8d8d8;
+      --page-bg: #f2f2f2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: #111;
+      background: var(--page-bg);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 1rem;
+    }
+
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    label,
+    select,
+    output {
+      font-size: 0.95rem;
+    }
+
+    input[type="range"] {
+      width: 10rem;
+      accent-color: #555;
+    }
+
+    select {
+      border: 1px solid #555;
+      border-radius: 2px;
+      padding: 0.35rem 0.5rem;
+      font: inherit;
+      color: #111;
+      background: #fff;
+    }
+
+    button {
+      border: 1px solid #555;
+      border-radius: 2px;
+      padding: 0.45rem 0.85rem;
+      font: inherit;
+      color: #111;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #e8e8e8;
+    }
+
+    .status {
+      min-height: 1.2rem;
+      margin: 0 0 1rem;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .page {
+      width: var(--paper-width);
+      height: var(--paper-height);
+      margin: 0 auto 1rem;
+      padding: var(--print-margin);
+      background: #fff;
+      box-shadow: 0 0.2rem 1rem rgb(0 0 0 / 20%);
+    }
+
+    .printable-area {
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--minor-line);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hex {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 0.45;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .hex:hover {
+      stroke: #777;
+    }
+
+    .hex-hit {
+      fill: transparent;
+      stroke: none;
+      cursor: pointer;
+      pointer-events: all;
+    }
+
+    .terrain-fill {
+      stroke: none;
+      pointer-events: none;
+    }
+
+    .terrain-symbol {
+      fill: none;
+      stroke: #888;
+      stroke-width: 0.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0.5;
+      pointer-events: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .terrain-dot {
+      fill: #888;
+      stroke: none;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .settlement-halo {
+      fill: #fbfbf7;
+      stroke: none;
+      opacity: 0.92;
+      pointer-events: none;
+    }
+
+    .settlement-marker {
+      fill: none;
+      stroke: #222;
+      stroke-width: 1.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .settlement-fill {
+      fill: #222;
+      stroke: none;
+      pointer-events: none;
+    }
+
+    .map-line {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 3;
+      opacity: 0.9;
+      pointer-events: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .map-line-road {
+      stroke: #8a5a2b;
+    }
+
+    .map-line-river {
+      stroke: #327eaa;
+    }
+
+    @page {
+      size: letter;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .controls {
+        display: none;
+      }
+
+      .status {
+        display: none;
+      }
+
+      .page {
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls" aria-label="Page controls">
+    <div class="field">
+      <label for="hexSize">Hex Size</label>
+      <input type="range" id="hexSize" min="16" max="36" step="1" value="24">
+      <output id="hexSizeValue" for="hexSize">24</output>
+    </div>
+    <div class="field">
+      <label for="tool">Tool</label>
+      <select id="tool">
+        <option value="terrain">Terrain</option>
+        <option value="settlement">Settlement</option>
+        <option value="line">Line</option>
+      </select>
+    </div>
+    <div class="field" id="lineTypeField" hidden>
+      <label for="lineType">Line Type</label>
+      <select id="lineType">
+        <option value="road">Road</option>
+        <option value="river">River</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="terrain">Terrain</label>
+      <select id="terrain">
+        <option value="">None</option>
+        <option value="P">Plains</option>
+        <option value="F">Forest</option>
+        <option value="H">Hills</option>
+        <option value="M">Mountains</option>
+        <option value="S">Swamp</option>
+        <option value="D">Desert</option>
+        <option value="W">Water</option>
+        <option value="T">Tundra</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="settlement">Settlement</label>
+      <select id="settlement">
+        <option value="">None</option>
+        <option value="hamlet">Hamlet</option>
+        <option value="village">Village</option>
+        <option value="town">Town</option>
+        <option value="city">City</option>
+        <option value="capital">Capital</option>
+      </select>
+    </div>
+    <button type="button" id="newButton">New</button>
+    <button type="button" id="saveButton">Save Map</button>
+    <button type="button" id="loadButton">Load Map</button>
+    <input type="file" id="loadFile" accept="application/json,.json" hidden>
+    <button type="button" id="printButton">Print</button>
+  </div>
+  <p class="status" id="status" aria-live="polite">Click a hex to assign terrain.</p>
+
+  <main class="page" aria-label="US Letter hex paper">
+    <div class="printable-area">
+      <svg id="hexGrid" viewBox="0 0 720 960" role="img" aria-label="Blank pointy-top hex grid"></svg>
+    </div>
+  </main>
+
+  <script>
+    const grid = document.getElementById("hexGrid");
+    const hexSize = document.getElementById("hexSize");
+    const hexSizeValue = document.getElementById("hexSizeValue");
+    const tool = document.getElementById("tool");
+    const lineType = document.getElementById("lineType");
+    const lineTypeField = document.getElementById("lineTypeField");
+    const terrain = document.getElementById("terrain");
+    const settlement = document.getElementById("settlement");
+    const status = document.getElementById("status");
+    const newButton = document.getElementById("newButton");
+    const saveButton = document.getElementById("saveButton");
+    const loadButton = document.getElementById("loadButton");
+    const loadFile = document.getElementById("loadFile");
+    const printButton = document.getElementById("printButton");
+
+    const width = 720;
+    const height = 960;
+    const terrainByHex = new Map();
+    const settlementByHex = new Map();
+    const lines = [];
+    let currentLine = null;
+    const terrainFills = {
+      P: "#eadfbd",
+      F: "#9fca8a",
+      H: "#d7b05e",
+      M: "#c88672",
+      S: "#8f9a62",
+      D: "#ead27a",
+      W: "#84b9d8",
+      T: "#eef6f8"
+    };
+
+    function hexKey(row, column) {
+      return `${row},${column}`;
+    }
+
+    function selectedTerrainName() {
+      return terrain.options[terrain.selectedIndex].text;
+    }
+
+    function selectedSettlementName() {
+      return settlement.options[settlement.selectedIndex].text;
+    }
+
+    function selectedLineTypeName() {
+      return lineType.options[lineType.selectedIndex].text;
+    }
+
+    function lineTypeName(type) {
+      return type === "river" ? "River" : "Road";
+    }
+
+    function makeHexPoints(centerX, centerY, radius) {
+      const points = [];
+
+      for (let i = 0; i < 6; i += 1) {
+        const angle = Math.PI / 180 * (60 * i - 30);
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+      }
+
+      return points.join(" ");
+    }
+
+    function svgElement(name, attributes) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+
+      Object.entries(attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+      });
+
+      return element;
+    }
+
+    function appendTerrainSymbol(type, centerX, centerY, radius) {
+      const size = Math.max(5, radius * 0.26);
+      const group = svgElement("g", { class: "terrain-symbol" });
+
+      if (type === "F") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX} ${centerY - size} L ${centerX - size * 0.55} ${centerY} L ${centerX + size * 0.55} ${centerY} Z`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX} ${centerY - size * 0.2} L ${centerX} ${centerY + size * 0.72}`
+        }));
+      }
+
+      if (type === "H") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size} ${centerY + size * 0.35} Q ${centerX - size * 0.35} ${centerY - size * 0.35} ${centerX + size * 0.3} ${centerY + size * 0.35}`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size * 0.15} ${centerY + size * 0.35} Q ${centerX + size * 0.35} ${centerY - size * 0.15} ${centerX + size} ${centerY + size * 0.35}`
+        }));
+      }
+
+      if (type === "M") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size} ${centerY + size * 0.55} L ${centerX - size * 0.25} ${centerY - size * 0.75} L ${centerX + size * 0.35} ${centerY + size * 0.55}`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size * 0.05} ${centerY + size * 0.55} L ${centerX + size * 0.55} ${centerY - size * 0.45} L ${centerX + size} ${centerY + size * 0.55}`
+        }));
+      }
+
+      if (type === "S") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size * 0.8} ${centerY + size * 0.45} Q ${centerX} ${centerY + size * 0.2} ${centerX + size * 0.8} ${centerY + size * 0.45}`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size * 0.35} ${centerY + size * 0.45} L ${centerX - size * 0.45} ${centerY - size * 0.45}`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX + size * 0.2} ${centerY + size * 0.45} L ${centerX + size * 0.35} ${centerY - size * 0.5}`
+        }));
+      }
+
+      if (type === "D") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size} ${centerY + size * 0.35} Q ${centerX - size * 0.1} ${centerY - size * 0.1} ${centerX + size} ${centerY + size * 0.35}`
+        }));
+        group.appendChild(svgElement("circle", {
+          class: "terrain-dot",
+          cx: centerX - size * 0.35,
+          cy: centerY - size * 0.25,
+          r: 1.15
+        }));
+        group.appendChild(svgElement("circle", {
+          class: "terrain-dot",
+          cx: centerX + size * 0.45,
+          cy: centerY - size * 0.05,
+          r: 1.15
+        }));
+      }
+
+      if (type === "W") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size} ${centerY - size * 0.2} Q ${centerX - size * 0.5} ${centerY - size * 0.55} ${centerX} ${centerY - size * 0.2} T ${centerX + size} ${centerY - size * 0.2}`
+        }));
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size} ${centerY + size * 0.35} Q ${centerX - size * 0.5} ${centerY} ${centerX} ${centerY + size * 0.35} T ${centerX + size} ${centerY + size * 0.35}`
+        }));
+      }
+
+      if (type === "T") {
+        group.appendChild(svgElement("path", {
+          d: `M ${centerX - size * 0.65} ${centerY} L ${centerX + size * 0.65} ${centerY} M ${centerX} ${centerY - size * 0.65} L ${centerX} ${centerY + size * 0.65} M ${centerX - size * 0.45} ${centerY - size * 0.45} L ${centerX + size * 0.45} ${centerY + size * 0.45} M ${centerX + size * 0.45} ${centerY - size * 0.45} L ${centerX - size * 0.45} ${centerY + size * 0.45}`
+        }));
+      }
+
+      if (group.childNodes.length > 0) {
+        grid.appendChild(group);
+      }
+    }
+
+    function appendSettlementMarker(type, centerX, centerY, radius) {
+      const size = Math.max(5, radius * 0.26);
+      const group = svgElement("g", { class: "settlement-marker" });
+
+      if (type) {
+        group.appendChild(svgElement("circle", {
+          class: "settlement-halo",
+          cx: centerX,
+          cy: centerY,
+          r: size * 1.15
+        }));
+      }
+
+      if (type === "hamlet") {
+        group.appendChild(svgElement("circle", {
+          class: "settlement-fill",
+          cx: centerX,
+          cy: centerY,
+          r: size * 0.42
+        }));
+      }
+
+      if (type === "village") {
+        group.appendChild(svgElement("circle", {
+          cx: centerX,
+          cy: centerY,
+          r: size * 0.62
+        }));
+      }
+
+      if (type === "town") {
+        group.appendChild(svgElement("circle", {
+          cx: centerX,
+          cy: centerY,
+          r: size * 0.72
+        }));
+        group.appendChild(svgElement("circle", {
+          class: "settlement-fill",
+          cx: centerX,
+          cy: centerY,
+          r: size * 0.28
+        }));
+      }
+
+      if (type === "city") {
+        group.appendChild(svgElement("circle", {
+          class: "settlement-fill",
+          cx: centerX,
+          cy: centerY,
+          r: size * 0.78
+        }));
+      }
+
+      if (type === "capital") {
+        const points = [];
+
+        for (let i = 0; i < 10; i += 1) {
+          const starRadius = i % 2 === 0 ? size : size * 0.42;
+          const angle = Math.PI / 180 * (i * 36 - 90);
+          const x = centerX + starRadius * Math.cos(angle);
+          const y = centerY + starRadius * Math.sin(angle);
+          points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+        }
+
+        group.appendChild(svgElement("polygon", {
+          class: "settlement-fill",
+          points: points.join(" ")
+        }));
+      }
+
+      if (group.childNodes.length > 0) {
+        grid.appendChild(group);
+      }
+    }
+
+    function linePath(points) {
+      if (points.length === 0) {
+        return "";
+      }
+
+      if (points.length === 1) {
+        return `M ${points[0].x} ${points[0].y}`;
+      }
+
+      if (points.length === 2) {
+        return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+      }
+
+      const commands = [`M ${points[0].x} ${points[0].y}`];
+
+      for (let i = 1; i < points.length - 1; i += 1) {
+        const midX = (points[i].x + points[i + 1].x) / 2;
+        const midY = (points[i].y + points[i + 1].y) / 2;
+        commands.push(`Q ${points[i].x} ${points[i].y} ${midX} ${midY}`);
+      }
+
+      const last = points[points.length - 1];
+      commands.push(`L ${last.x} ${last.y}`);
+      return commands.join(" ");
+    }
+
+    function appendMapLine(line, centersByKey) {
+      const points = line.points
+        .map((point) => centersByKey.get(hexKey(point.row, point.column)))
+        .filter(Boolean);
+
+      if (points.length < 2) {
+        return;
+      }
+
+      grid.appendChild(svgElement("path", {
+        class: `map-line map-line-${line.type}`,
+        d: linePath(points)
+      }));
+    }
+
+    function addLinePoint(row, column) {
+      if (!currentLine) {
+        currentLine = {
+          type: lineType.value,
+          points: []
+        };
+      }
+
+      currentLine.points.push({ row, column });
+      status.textContent = `Line tool: ${lineTypeName(currentLine.type)}, ${currentLine.points.length} point(s)`;
+    }
+
+    function finishCurrentLine() {
+      if (!currentLine) {
+        return;
+      }
+
+      if (currentLine.points.length > 1) {
+        lines.push(currentLine);
+        status.textContent = `Line tool: finished ${currentLine.type} with ${currentLine.points.length} point(s)`;
+      } else {
+        status.textContent = "Line tool: line needs at least 2 points";
+      }
+
+      currentLine = null;
+      drawHexGrid();
+    }
+
+    function updateHex(row, column, key) {
+      if (tool.value === "terrain") {
+        if (terrain.value) {
+          terrainByHex.set(key, terrain.value);
+          status.textContent = `Terrain tool: clicked hex row ${row}, col ${column}: ${selectedTerrainName()}`;
+        } else {
+          terrainByHex.delete(key);
+          status.textContent = `Terrain tool: clicked hex row ${row}, col ${column}: cleared terrain`;
+        }
+        return;
+      }
+
+      if (tool.value === "line") {
+        addLinePoint(row, column);
+        return;
+      }
+
+      if (settlement.value) {
+        settlementByHex.set(key, settlement.value);
+        status.textContent = `Settlement tool: clicked hex row ${row}, col ${column}: ${selectedSettlementName()}`;
+      } else {
+        settlementByHex.delete(key);
+        status.textContent = `Settlement tool: clicked hex row ${row}, col ${column}: cleared settlement`;
+      }
+    }
+
+    function saveMap() {
+      const mapData = {
+        version: 1,
+        hexSize: Number(hexSize.value),
+        settings: {
+          tool: tool.value,
+          terrain: terrain.value,
+          settlement: settlement.value,
+          lineType: lineType.value
+        },
+        terrain: Object.fromEntries(terrainByHex),
+        settlements: Object.fromEntries(settlementByHex),
+        lines,
+        currentLine
+      };
+      const blob = new Blob([JSON.stringify(mapData, null, 2)], {
+        type: "application/json"
+      });
+      const link = document.createElement("a");
+
+      link.href = URL.createObjectURL(blob);
+      link.download = "hex-map.json";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      status.textContent = "Saved map as hex-map.json";
+    }
+
+    function restoreMap(mapData) {
+      if (!mapData || typeof mapData !== "object") {
+        throw new Error("Map file is not valid JSON data.");
+      }
+
+      terrainByHex.clear();
+      settlementByHex.clear();
+      lines.splice(0, lines.length);
+      currentLine = mapData.currentLine || null;
+
+      Object.entries(mapData.terrain || {}).forEach(([key, value]) => {
+        terrainByHex.set(key, value);
+      });
+      Object.entries(mapData.settlements || {}).forEach(([key, value]) => {
+        settlementByHex.set(key, value);
+      });
+      (mapData.lines || []).forEach((line) => {
+        if (line.type && Array.isArray(line.points)) {
+          lines.push(line);
+        }
+      });
+
+      if (mapData.hexSize) {
+        hexSize.value = mapData.hexSize;
+      }
+
+      if (mapData.settings) {
+        tool.value = mapData.settings.tool || "terrain";
+        terrain.value = mapData.settings.terrain || "";
+        settlement.value = mapData.settings.settlement || "";
+        lineType.value = mapData.settings.lineType || "road";
+      }
+
+      updateToolControls();
+      drawHexGrid();
+      status.textContent = "Loaded map.";
+    }
+
+    function loadMapFile(file) {
+      if (!file) {
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.addEventListener("load", () => {
+        try {
+          restoreMap(JSON.parse(reader.result));
+        } catch (error) {
+          status.textContent = `Could not load map: ${error.message}`;
+        }
+      });
+      reader.readAsText(file);
+    }
+
+    function updateToolControls() {
+      lineTypeField.hidden = tool.value !== "line";
+    }
+
+    function drawHexGrid() {
+      grid.replaceChildren();
+      hexSizeValue.textContent = hexSize.value;
+      const hexes = [];
+      const centersByKey = new Map();
+
+      const hexRadius = Number(hexSize.value);
+      const hexWidth = Math.sqrt(3) * hexRadius;
+      const hexHeight = 2 * hexRadius;
+      const horizontalStep = hexWidth;
+      const verticalStep = hexHeight * 0.75;
+
+      for (let y = hexRadius; y < height + hexRadius; y += verticalStep) {
+        const row = Math.round((y - hexRadius) / verticalStep);
+        const offsetX = row % 2 === 0 ? 0 : hexWidth / 2;
+
+        for (let x = hexRadius, column = 0; x < width + hexWidth; x += horizontalStep, column += 1) {
+          const centerX = x + offsetX;
+          const centerY = y;
+          const key = hexKey(row, column);
+          const points = makeHexPoints(centerX, centerY, hexRadius);
+          const hex = { row, column, key, centerX, centerY, points };
+
+          hexes.push(hex);
+          centersByKey.set(key, { x: centerX, y: centerY });
+        }
+      }
+
+      hexes.forEach((hex) => {
+          if (terrainFills[terrainByHex.get(hex.key)]) {
+            const fill = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            fill.setAttribute("class", "terrain-fill");
+            fill.setAttribute("points", hex.points);
+            fill.setAttribute("fill", terrainFills[terrainByHex.get(hex.key)]);
+            grid.appendChild(fill);
+          }
+      });
+
+      hexes.forEach((hex) => {
+        appendTerrainSymbol(terrainByHex.get(hex.key), hex.centerX, hex.centerY, hexRadius);
+      });
+
+      hexes.forEach((hex) => {
+          const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+          polygon.setAttribute("class", "hex");
+          polygon.setAttribute("points", hex.points);
+          grid.appendChild(polygon);
+      });
+
+      lines.forEach((line) => appendMapLine(line, centersByKey));
+      if (currentLine) {
+        appendMapLine(currentLine, centersByKey);
+      }
+
+      hexes.forEach((hex) => {
+          appendSettlementMarker(settlementByHex.get(hex.key), hex.centerX, hex.centerY, hexRadius);
+      });
+
+      hexes.forEach((hex) => {
+          const hitArea = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+          hitArea.setAttribute("class", "hex-hit");
+          hitArea.setAttribute("points", hex.points);
+          hitArea.addEventListener("click", (event) => {
+            if (event.detail > 1) {
+              if (tool.value === "line") {
+                finishCurrentLine();
+              }
+              return;
+            }
+
+            updateHex(hex.row, hex.column, hex.key);
+            drawHexGrid();
+          });
+          hitArea.addEventListener("dblclick", () => {
+            if (tool.value === "line") {
+              finishCurrentLine();
+            }
+          });
+          grid.appendChild(hitArea);
+      });
+    }
+
+    hexSize.addEventListener("input", drawHexGrid);
+    tool.addEventListener("change", updateToolControls);
+    newButton.addEventListener("click", drawHexGrid);
+    saveButton.addEventListener("click", saveMap);
+    loadButton.addEventListener("click", () => loadFile.click());
+    loadFile.addEventListener("change", () => {
+      loadMapFile(loadFile.files[0]);
+      loadFile.value = "";
+    });
+    printButton.addEventListener("click", () => window.print());
+
+    updateToolControls();
+    drawHexGrid();
+  </script>
+</body>
+</html>
