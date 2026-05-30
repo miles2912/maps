@@ -168,6 +168,44 @@
       pointer-events: none;
     }
 
+    .settlement-label-halo {
+      fill: none;
+      stroke: #fbfbf7;
+      stroke-width: 4;
+      stroke-linejoin: round;
+      paint-order: stroke;
+      pointer-events: none;
+    }
+
+    .settlement-label {
+      fill: #222;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .text-label-halo {
+      fill: none;
+      stroke: #fbfbf7;
+      stroke-width: 4;
+      stroke-linejoin: round;
+      paint-order: stroke;
+      pointer-events: none;
+    }
+
+    .text-label {
+      fill: #1f1f1f;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
     .map-line {
       fill: none;
       stroke-linecap: round;
@@ -186,6 +224,58 @@
       stroke: #327eaa;
     }
 
+    .help-backdrop {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgb(0 0 0 / 35%);
+      z-index: 10;
+    }
+
+    .help-backdrop[hidden] {
+      display: none;
+    }
+
+    .help-modal {
+      width: min(36rem, 100%);
+      max-height: min(44rem, 90vh);
+      overflow: auto;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 1rem 1.25rem;
+      background: #fff;
+      box-shadow: 0 0.25rem 1.5rem rgb(0 0 0 / 30%);
+    }
+
+    .help-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .help-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .help-modal h3 {
+      margin: 0.85rem 0 0.25rem;
+      font-size: 1rem;
+    }
+
+    .help-modal ul {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+
+    .help-modal li {
+      margin: 0.15rem 0;
+    }
+
     @page {
       size: letter;
       margin: 0;
@@ -196,7 +286,8 @@
         background: #fff;
       }
 
-      .controls {
+      .controls,
+      .help-backdrop {
         display: none;
       }
 
@@ -224,6 +315,8 @@
         <option value="terrain">Terrain</option>
         <option value="settlement">Settlement</option>
         <option value="line">Line</option>
+        <option value="text">Text</option>
+        <option value="delete">Delete</option>
       </select>
     </div>
     <div class="field" id="lineTypeField" hidden>
@@ -258,13 +351,84 @@
         <option value="capital">Capital</option>
       </select>
     </div>
-    <button type="button" id="newButton">New</button>
     <button type="button" id="saveButton">Save Map</button>
     <button type="button" id="loadButton">Load Map</button>
     <input type="file" id="loadFile" accept="application/json,.json" hidden>
     <button type="button" id="printButton">Print</button>
+    <button type="button" id="helpButton" aria-haspopup="dialog">Help</button>
   </div>
   <p class="status" id="status" aria-live="polite">Click a hex to assign terrain.</p>
+
+  <div class="help-backdrop" id="helpDialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="help-modal">
+      <div class="help-header">
+        <h2 id="helpTitle">Hex Map Tool Help</h2>
+        <button type="button" id="closeHelpButton">Close</button>
+      </div>
+
+      <h3>Terrain</h3>
+      <ul>
+        <li>Select Tool = Terrain.</li>
+        <li>Choose a terrain type.</li>
+        <li>Click a hex to apply terrain.</li>
+        <li>Choose Terrain = None and click a hex to clear terrain.</li>
+      </ul>
+
+      <h3>Settlements</h3>
+      <ul>
+        <li>Select Tool = Settlement.</li>
+        <li>Choose Hamlet, Village, Town, City, or Capital.</li>
+        <li>Click a hex to place a settlement.</li>
+        <li>Choose Settlement = None and click a hex to remove a settlement.</li>
+        <li>Right-click a settlement marker to add or edit its name.</li>
+      </ul>
+
+      <h3>Roads and Rivers</h3>
+      <ul>
+        <li>Select Tool = Line.</li>
+        <li>Choose Road or River.</li>
+        <li>Click to place points.</li>
+        <li>Double-click to finish the line.</li>
+        <li>Roads and rivers are saved with the map.</li>
+      </ul>
+
+      <h3>Text Labels</h3>
+      <ul>
+        <li>Select Tool = Text.</li>
+        <li>Click the map to place a text label.</li>
+        <li>Text labels move correctly when the hex size changes.</li>
+        <li>Text labels are saved with the map.</li>
+      </ul>
+
+      <h3>Delete Tool</h3>
+      <ul>
+        <li>Select Tool = Delete.</li>
+        <li>Click a text label to delete it.</li>
+        <li>Click a settlement to delete it.</li>
+        <li>Click a road or river to delete it.</li>
+        <li>Terrain is still removed using Terrain = None.</li>
+      </ul>
+
+      <h3>Save and Load</h3>
+      <ul>
+        <li>Save Map exports the current map to JSON.</li>
+        <li>Load Map restores a previously saved map.</li>
+        <li>Save/load includes terrain, settlements, names, roads, rivers, text labels, and map settings.</li>
+      </ul>
+
+      <h3>Printing</h3>
+      <ul>
+        <li>Print generates a printable version of the map.</li>
+        <li>Controls and help do not appear on the printed page.</li>
+      </ul>
+
+      <h3>General Notes</h3>
+      <ul>
+        <li>Terrain, settlements, roads, rivers, and labels can coexist.</li>
+        <li>Changing hex size redraws the map and preserves map data.</li>
+      </ul>
+    </div>
+  </div>
 
   <main class="page" aria-label="US Letter hex paper">
     <div class="printable-area">
@@ -282,17 +446,20 @@
     const terrain = document.getElementById("terrain");
     const settlement = document.getElementById("settlement");
     const status = document.getElementById("status");
-    const newButton = document.getElementById("newButton");
     const saveButton = document.getElementById("saveButton");
     const loadButton = document.getElementById("loadButton");
     const loadFile = document.getElementById("loadFile");
     const printButton = document.getElementById("printButton");
+    const helpButton = document.getElementById("helpButton");
+    const closeHelpButton = document.getElementById("closeHelpButton");
+    const helpDialog = document.getElementById("helpDialog");
 
     const width = 720;
     const height = 960;
     const terrainByHex = new Map();
     const settlementByHex = new Map();
     const lines = [];
+    const textLabels = [];
     let currentLine = null;
     const terrainFills = {
       P: "#eadfbd",
@@ -317,6 +484,18 @@
       return settlement.options[settlement.selectedIndex].text;
     }
 
+    function settlementType(record) {
+      return typeof record === "string" ? record : record && record.type;
+    }
+
+    function settlementName(record) {
+      return typeof record === "object" && record ? record.name || "" : "";
+    }
+
+    function makeSettlement(type, name = "") {
+      return { type, name };
+    }
+
     function selectedLineTypeName() {
       return lineType.options[lineType.selectedIndex].text;
     }
@@ -336,6 +515,59 @@
       }
 
       return points.join(" ");
+    }
+
+    function svgPointFromEvent(event) {
+      const point = grid.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      return point.matrixTransform(grid.getScreenCTM().inverse());
+    }
+
+    function hexCenter(row, column, radius) {
+      const hexWidth = Math.sqrt(3) * radius;
+      const verticalStep = 2 * radius * 0.75;
+      const offsetX = row % 2 === 0 ? 0 : hexWidth / 2;
+
+      return {
+        x: radius + column * hexWidth + offsetX,
+        y: radius + row * verticalStep
+      };
+    }
+
+    function textLabelFromPoint(text, point, row, column, radius) {
+      const center = hexCenter(row, column, radius);
+
+      return {
+        text,
+        row,
+        col: column,
+        offsetX: Number(((point.x - center.x) / radius).toFixed(3)),
+        offsetY: Number(((point.y - center.y) / radius).toFixed(3))
+      };
+    }
+
+    function nearestHex(x, y, radius) {
+      const hexWidth = Math.sqrt(3) * radius;
+      const verticalStep = 2 * radius * 0.75;
+      let nearest = { row: 0, column: 0 };
+      let nearestDistance = Infinity;
+
+      for (let centerY = radius; centerY < height + radius; centerY += verticalStep) {
+        const row = Math.round((centerY - radius) / verticalStep);
+        const offsetX = row % 2 === 0 ? 0 : hexWidth / 2;
+
+        for (let centerX = radius + offsetX, column = 0; centerX < width + hexWidth; centerX += hexWidth, column += 1) {
+          const distance = (centerX - x) ** 2 + (centerY - y) ** 2;
+
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = { row, column };
+          }
+        }
+      }
+
+      return nearest;
     }
 
     function svgElement(name, attributes) {
@@ -429,7 +661,8 @@
       }
     }
 
-    function appendSettlementMarker(type, centerX, centerY, radius) {
+    function appendSettlementMarker(record, centerX, centerY, radius) {
+      const type = settlementType(record);
       const size = Math.max(5, radius * 0.26);
       const group = svgElement("g", { class: "settlement-marker" });
 
@@ -504,6 +737,91 @@
       }
     }
 
+    function appendSettlementLabel(record, centerX, centerY, radius) {
+      const name = settlementName(record).trim();
+
+      if (!name) {
+        return;
+      }
+
+      const labelY = centerY - Math.max(10, radius * 0.52);
+      const halo = svgElement("text", {
+        class: "settlement-label-halo",
+        x: centerX,
+        y: labelY
+      });
+      const label = svgElement("text", {
+        class: "settlement-label",
+        x: centerX,
+        y: labelY
+      });
+
+      halo.textContent = name;
+      label.textContent = name;
+      grid.appendChild(halo);
+      grid.appendChild(label);
+    }
+
+    function appendTextLabel(labelData, centersByKey, radius) {
+      const position = textLabelPosition(labelData, centersByKey, radius);
+
+      if (!position) {
+        return;
+      }
+
+      const { x, y } = position;
+      const halo = svgElement("text", {
+        class: "text-label-halo",
+        x,
+        y
+      });
+      const label = svgElement("text", {
+        class: "text-label",
+        x,
+        y
+      });
+
+      halo.textContent = labelData.text;
+      label.textContent = labelData.text;
+      grid.appendChild(halo);
+      grid.appendChild(label);
+    }
+
+    function textLabelPosition(labelData, centersByKey, radius) {
+      const column = Number.isFinite(labelData.col) ? labelData.col : labelData.column;
+      const center = centersByKey.get(hexKey(labelData.row, column));
+
+      if (!center) {
+        return null;
+      }
+
+      return {
+        x: center.x + (labelData.offsetX || 0) * radius,
+        y: center.y + (labelData.offsetY || 0) * radius
+      };
+    }
+
+    function addTextLabel(event, row, column, radius) {
+      const text = prompt("Label text:");
+
+      if (text === null) {
+        status.textContent = "Text tool: label canceled";
+        return;
+      }
+
+      const trimmedText = text.trim();
+
+      if (!trimmedText) {
+        status.textContent = "Text tool: empty label ignored";
+        return;
+      }
+
+      const point = svgPointFromEvent(event);
+      textLabels.push(textLabelFromPoint(trimmedText, point, row, column, radius));
+      status.textContent = `Text tool: placed "${trimmedText}"`;
+      drawHexGrid();
+    }
+
     function linePath(points) {
       if (points.length === 0) {
         return "";
@@ -543,6 +861,46 @@
         class: `map-line map-line-${line.type}`,
         d: linePath(points)
       }));
+    }
+
+    function lineScreenPoints(line, centersByKey) {
+      return line.points
+        .map((point) => centersByKey.get(hexKey(point.row, point.column)))
+        .filter(Boolean);
+    }
+
+    function distanceToSegment(point, start, end) {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const lengthSquared = dx * dx + dy * dy;
+
+      if (lengthSquared === 0) {
+        return Math.hypot(point.x - start.x, point.y - start.y);
+      }
+
+      const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared));
+      const projection = {
+        x: start.x + t * dx,
+        y: start.y + t * dy
+      };
+
+      return Math.hypot(point.x - projection.x, point.y - projection.y);
+    }
+
+    function distanceToLine(point, line, centersByKey) {
+      const points = lineScreenPoints(line, centersByKey);
+
+      if (points.length < 2) {
+        return Infinity;
+      }
+
+      let nearest = Infinity;
+
+      for (let i = 0; i < points.length - 1; i += 1) {
+        nearest = Math.min(nearest, distanceToSegment(point, points[i], points[i + 1]));
+      }
+
+      return nearest;
     }
 
     function addLinePoint(row, column) {
@@ -591,12 +949,79 @@
       }
 
       if (settlement.value) {
-        settlementByHex.set(key, settlement.value);
+        settlementByHex.set(key, makeSettlement(settlement.value, settlementName(settlementByHex.get(key))));
         status.textContent = `Settlement tool: clicked hex row ${row}, col ${column}: ${selectedSettlementName()}`;
       } else {
         settlementByHex.delete(key);
         status.textContent = `Settlement tool: clicked hex row ${row}, col ${column}: cleared settlement`;
       }
+    }
+
+    function editSettlementName(row, column, key) {
+      const record = settlementByHex.get(key);
+
+      if (!record) {
+        return;
+      }
+
+      const currentName = settlementName(record);
+      const nextName = prompt("Settlement name:", currentName);
+
+      if (nextName === null) {
+        status.textContent = `Settlement name unchanged at row ${row}, col ${column}`;
+        return;
+      }
+
+      settlementByHex.set(key, makeSettlement(settlementType(record), nextName.trim()));
+      status.textContent = nextName.trim()
+        ? `Named settlement at row ${row}, col ${column}: ${nextName.trim()}`
+        : `Cleared settlement name at row ${row}, col ${column}`;
+      drawHexGrid();
+    }
+
+    function deleteAt(event, hex, centersByKey, radius) {
+      const point = svgPointFromEvent(event);
+
+      for (let i = textLabels.length - 1; i >= 0; i -= 1) {
+        const position = textLabelPosition(textLabels[i], centersByKey, radius);
+
+        if (!position) {
+          continue;
+        }
+
+        const halfWidth = Math.max(18, textLabels[i].text.length * 4.6);
+        const halfHeight = 11;
+
+        if (Math.abs(point.x - position.x) <= halfWidth && Math.abs(point.y - position.y) <= halfHeight) {
+          const [removed] = textLabels.splice(i, 1);
+          status.textContent = `Delete tool: deleted text "${removed.text}"`;
+          drawHexGrid();
+          return;
+        }
+      }
+
+      if (settlementByHex.has(hex.key)) {
+        const center = centersByKey.get(hex.key);
+        const markerRadius = Math.max(8, radius * 0.42);
+
+        if (center && Math.hypot(point.x - center.x, point.y - center.y) <= markerRadius) {
+          settlementByHex.delete(hex.key);
+          status.textContent = `Delete tool: deleted settlement at row ${hex.row}, col ${hex.column}`;
+          drawHexGrid();
+          return;
+        }
+      }
+
+      for (let i = lines.length - 1; i >= 0; i -= 1) {
+        if (distanceToLine(point, lines[i], centersByKey) <= 6) {
+          const [removed] = lines.splice(i, 1);
+          status.textContent = `Delete tool: deleted ${lineTypeName(removed.type).toLowerCase()}`;
+          drawHexGrid();
+          return;
+        }
+      }
+
+      status.textContent = "Delete tool: nothing to delete";
     }
 
     function saveMap() {
@@ -612,7 +1037,8 @@
         terrain: Object.fromEntries(terrainByHex),
         settlements: Object.fromEntries(settlementByHex),
         lines,
-        currentLine
+        currentLine,
+        textLabels
       };
       const blob = new Blob([JSON.stringify(mapData, null, 2)], {
         type: "application/json"
@@ -634,17 +1060,37 @@
       terrainByHex.clear();
       settlementByHex.clear();
       lines.splice(0, lines.length);
+      textLabels.splice(0, textLabels.length);
       currentLine = mapData.currentLine || null;
 
       Object.entries(mapData.terrain || {}).forEach(([key, value]) => {
         terrainByHex.set(key, value);
       });
       Object.entries(mapData.settlements || {}).forEach(([key, value]) => {
-        settlementByHex.set(key, value);
+        settlementByHex.set(key, typeof value === "string" ? makeSettlement(value) : value);
       });
       (mapData.lines || []).forEach((line) => {
         if (line.type && Array.isArray(line.points)) {
           lines.push(line);
+        }
+      });
+      const restoredHexSize = Number(mapData.hexSize || hexSize.value);
+      (mapData.textLabels || []).forEach((label) => {
+        if (label.text && Number.isFinite(label.row) && (Number.isFinite(label.col) || Number.isFinite(label.column))) {
+          textLabels.push(label);
+          return;
+        }
+
+        if (label.text && Number.isFinite(label.x) && Number.isFinite(label.y)) {
+          const anchor = nearestHex(label.x, label.y, restoredHexSize);
+          const converted = textLabelFromPoint(
+            label.text,
+            { x: label.x, y: label.y },
+            anchor.row,
+            anchor.column,
+            restoredHexSize
+          );
+          textLabels.push(converted);
         }
       });
 
@@ -683,6 +1129,16 @@
 
     function updateToolControls() {
       lineTypeField.hidden = tool.value !== "line";
+    }
+
+    function openHelp() {
+      helpDialog.hidden = false;
+      closeHelpButton.focus();
+    }
+
+    function closeHelp() {
+      helpDialog.hidden = true;
+      helpButton.focus();
     }
 
     function drawHexGrid() {
@@ -744,10 +1200,26 @@
       });
 
       hexes.forEach((hex) => {
+          appendSettlementLabel(settlementByHex.get(hex.key), hex.centerX, hex.centerY, hexRadius);
+      });
+
+      textLabels.forEach((label) => appendTextLabel(label, centersByKey, hexRadius));
+
+      hexes.forEach((hex) => {
           const hitArea = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
           hitArea.setAttribute("class", "hex-hit");
           hitArea.setAttribute("points", hex.points);
           hitArea.addEventListener("click", (event) => {
+            if (tool.value === "delete") {
+              deleteAt(event, hex, centersByKey, hexRadius);
+              return;
+            }
+
+            if (tool.value === "text") {
+              addTextLabel(event, hex.row, hex.column, hexRadius);
+              return;
+            }
+
             if (event.detail > 1) {
               if (tool.value === "line") {
                 finishCurrentLine();
@@ -763,13 +1235,18 @@
               finishCurrentLine();
             }
           });
+          hitArea.addEventListener("contextmenu", (event) => {
+            if (settlementByHex.has(hex.key)) {
+              event.preventDefault();
+              editSettlementName(hex.row, hex.column, hex.key);
+            }
+          });
           grid.appendChild(hitArea);
       });
     }
 
     hexSize.addEventListener("input", drawHexGrid);
     tool.addEventListener("change", updateToolControls);
-    newButton.addEventListener("click", drawHexGrid);
     saveButton.addEventListener("click", saveMap);
     loadButton.addEventListener("click", () => loadFile.click());
     loadFile.addEventListener("change", () => {
@@ -777,6 +1254,18 @@
       loadFile.value = "";
     });
     printButton.addEventListener("click", () => window.print());
+    helpButton.addEventListener("click", openHelp);
+    closeHelpButton.addEventListener("click", closeHelp);
+    helpDialog.addEventListener("click", (event) => {
+      if (event.target === helpDialog) {
+        closeHelp();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !helpDialog.hidden) {
+        closeHelp();
+      }
+    });
 
     updateToolControls();
     drawHexGrid();
