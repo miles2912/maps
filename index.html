@@ -18,6 +18,10 @@
       box-sizing: border-box;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -326,7 +330,7 @@
         <option value="river">River</option>
       </select>
     </div>
-    <div class="field">
+    <div class="field" id="terrainField">
       <label for="terrain">Terrain</label>
       <select id="terrain">
         <option value="">None</option>
@@ -340,7 +344,7 @@
         <option value="T">Tundra</option>
       </select>
     </div>
-    <div class="field">
+    <div class="field" id="settlementField">
       <label for="settlement">Settlement</label>
       <select id="settlement">
         <option value="">None</option>
@@ -444,7 +448,9 @@
     const lineType = document.getElementById("lineType");
     const lineTypeField = document.getElementById("lineTypeField");
     const terrain = document.getElementById("terrain");
+    const terrainField = document.getElementById("terrainField");
     const settlement = document.getElementById("settlement");
+    const settlementField = document.getElementById("settlementField");
     const status = document.getElementById("status");
     const saveButton = document.getElementById("saveButton");
     const loadButton = document.getElementById("loadButton");
@@ -1128,7 +1134,18 @@
     }
 
     function updateToolControls() {
+      const prompts = {
+        terrain: "Click a hex to assign terrain.",
+        settlement: "Click a hex to place settlement. Right-click a settlement to name it.",
+        line: "Click points to draw. Double-click to finish.",
+        text: "Click the map to place text.",
+        delete: "Click text, settlement, road, or river to delete it."
+      };
+
+      terrainField.hidden = tool.value !== "terrain";
+      settlementField.hidden = tool.value !== "settlement";
       lineTypeField.hidden = tool.value !== "line";
+      status.textContent = prompts[tool.value] || prompts.terrain;
     }
 
     function openHelp() {
